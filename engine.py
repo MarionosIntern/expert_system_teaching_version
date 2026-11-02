@@ -23,19 +23,19 @@ class ForwardChainingEngine:
         return (rule.consequent not in self.facts and all(a in self.facts for a in rule.antecedents))
 
     def run(self) -> None:
-        """Implement the forward chaining loop."""
-        # while there are rules that can fire:
-        #     select one rule (students decide tie-breaking)
-        #     add its consequent to facts
-        #     record in trace
+        """Forward Chaining loop: keep firing rules until no more can fire."""
 
         step = 0
         while True:
+            # Finds all rules that can fire.
             candidates = [r for r in self.rules if self.can_fire(r)]
             if not candidates:
                 break
+            # Picks highest priority rule, then the most specific rule. If still tied, max() returns the first one.
             rule = max(candidates, key = lambda r: (r.priority, len(r.antecedents)))
             self.facts.add(rule.consequent)
+
+            # Records the rule firing in the trace.
             step = step + 1
             self.trace.append({
                 "step": step,
@@ -46,6 +46,7 @@ class ForwardChainingEngine:
 
     def conclusions(self) -> Dict[str, List[str]]:
         """Return separated results (recommendations, specs, other facts)."""
+
         result = {"recommendations": [], "specs": [], "other": []}
         for step in self.trace:
             c = step["then"]

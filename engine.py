@@ -1,0 +1,58 @@
+from dataclasses import dataclass
+from typing import List, Set, Dict, Any
+
+@dataclass
+class Rule:
+    antecedents: List[str]
+    consequent: str
+    priority: int = 0
+    name: str = ""
+
+class ForwardChainingEngine:
+    def __init__(self, rules: List[Rule]):
+        self.rules = rules
+        self.facts: Set[str] = set()
+        self.trace: List[Dict[str, Any]] = []
+
+    def assert_facts(self, initial: List[str]) -> None:
+        """Store initial facts into the working memory."""
+        self.facts.update(initial)
+
+    def can_fire(self, rule: Rule) -> bool:
+        """Return True if all antecedents are true and consequent not yet known."""
+        return (rule.consequent not in self.facts and all(a in self.facts for a in rule.antecedents))
+
+    def run(self) -> None:
+        """Implement the forward chaining loop."""
+        # while there are rules that can fire:
+        #     select one rule (students decide tie-breaking)
+        #     add its consequent to facts
+        #     record in trace
+
+        step = 0
+        while True:
+            candidates = [r for r in self.rules if self.can_fire(r)]
+            if not candidates:
+                break
+            rule = max(candidates, key = lambda r: (r.priority, len(r.antecedents)))
+            self.facts.add(rule.consequent)
+            step = step + 1
+            self.trace.append({
+                "step": step,
+                "rule": rule.name,
+                "if": list(rule.antecedents),
+                "then": rule.consequent,
+            })
+
+    def conclusions(self) -> Dict[str, List[str]]:
+        """Return separated results (recommendations, specs, other facts)."""
+        result = {"recommendations": [], "specs": [], "other": []}
+        for step in self.trace:
+            c = step["then"]
+            if c.startswith("recommend:"):
+                result["recommendations"].append(c.split(":", 1)[1])
+            elif c.startswith("spec:"):
+                result["specs"].append(c.split(":", 1)[1])
+            else:
+                result["other"].append(c)
+        return result
